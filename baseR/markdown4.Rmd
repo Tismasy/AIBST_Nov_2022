@@ -1,0 +1,128 @@
+---
+title: "Untitled"
+author: "Tsitsi"
+date: "2022-11-09"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Question 2
+
+Application reading data
+
+```{r}
+a <- readRDS("my_day2matrix.rds")
+a
+```
+
+## Question 3
+
+Row sums and means
+
+```{r}
+rowSums(a)
+rowMeans(a)
+b <- cbind(a, 
+           rowSums = rowSums(a), 
+           rowMeans = rowMeans(a))
+b
+```
+
+## Question 4&5
+
+loading ToothGrowth dataset and finding more information
+
+```{r}
+data("ToothGrowth")
+head(ToothGrowth)
+summary(ToothGrowth)
+?ToothGrowth
+```
+
+## Question 6
+
+Finding columns of data
+
+```{r}
+colnames(ToothGrowth)
+```
+
+## Question 7
+
+Mean tooth length
+
+```{r}
+mean(ToothGrowth$len)
+```
+
+## Question 8
+
+Max and min teeth length
+
+```{r}
+max(ToothGrowth$len)
+min(ToothGrowth$len)
+```
+
+## Question 8
+
+Calculate rowSums and rowMeans
+
+```{r}
+#These functions dont work because the supp column is not numeric
+rowSums(ToothGrowth)
+rowMeans(ToothGrowth)
+```
+
+
+## Functions
+
+```{r}
+hypotenuse <- function(side1,side2){
+  hypo <- sqrt(side1**2 + side2**2)
+return(hypo)
+}
+```
+
+```{r}
+hypotenuse(9,8)
+```
+
+## Apply
+
+```{r}
+vector <- c(1:10)
+
+square <- function(y){
+  sq=y^2
+  return(sq)
+}
+
+square(5)
+```
+
+```{r}
+lapply(vector, square)
+```
+```{r}
+sapply(vector, square)
+```
+
+## Listing numeric and logical vectors
+
+```{r}
+new_list <- list(vector, c(1:5), seq(from=10, to = 18, by =2), c(T, T, F, T, F))
+
+sapply(new_list, sum)
+lapply(new_list, sum)
+```
+
+## Repeat each element using sapply
+
+```{r}
+sapply(new_list, rep, each = 3)
+```
+
