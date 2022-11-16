@@ -222,7 +222,7 @@ ggplot(ggplot2::msleep, aes(x = order)) +
 ```{r}
 ggplot(ggplot2::msleep, aes(x = order)) +
   geom_bar(aes(color = order))+
-  theme(axis.text.x = element_text(angle=90, hjust = 1))+
+  theme(axis.text.x = element_text(angle=90, hjust = 1, vjust = 0.5, size=rel(1.5)))+
   labs(title = "msleep", x = "order", y = "observation") +
   theme(text=element_text(size=20)) +
   theme(plot.title=element_text(hjust = (0.5)))
@@ -232,13 +232,14 @@ ggplot(ggplot2::msleep, aes(x = order)) +
   (Copy-paste and extend the code chunk above.)
 
 ```{r}
-
-
-
-
-
-
-
+ggplot(ggplot2::msleep, aes(x = order)) +
+  geom_bar(aes(color=order, fill = genus))+
+  theme(axis.text.x = element_text(angle=90, hjust = 1, vjust = 0.5, size=rel(1.5)))+
+  labs(title = "msleep", x = "order", y = "observation") +
+  theme(text=element_text(size=16)) +
+  theme(plot.title=element_text(hjust = (0.5)))+
+  theme(legend.key.size = unit(2, "mm"))
+guides(fill = guide_legend(ncol = 3))
 ```
 
 From this point onwards, you may need to iteratively resize the text of the ticks and axes for readability.
@@ -278,31 +279,28 @@ From this point onwards, you may need to iteratively resize the text of the tick
 - Add a contour of thin black lines to the bars.
 
 ```{r}
-
-
-
-
-
-
-
-
-
+ggplot(ggplot2::msleep, aes(x = order)) +
+  geom_bar(aes(fill = genus), color="black")+
+  theme(axis.text.x = element_text(angle=90, hjust = 1, vjust = 0.5, size=rel(1.5)))+
+  labs(title = "msleep", x = "order", y = "observation") +
+  theme(text=element_text(size=16)) +
+  theme(plot.title=element_text(hjust = (0.5)))+
+  theme(legend.key.size = unit(2, "mm"))
+guides(fill = guide_legend(ncol = 3))
 
 ```
 
 - Assign that last plot to an object called `obds_msleep`.
 
 ```{r}
-
-
-
-
-
-
-
-
-
-
+obds_sleep <- ggplot(ggplot2::msleep, aes(x = order))+
+  geom_bar(aes(fill = genus), color="black")+
+  theme(axis.text.x = element_text(angle=90, hjust = 1, vjust = 0.5, size=rel(1.5)))+
+  labs(title = "msleep", x = "order", y = "observation") +
+  theme(text=element_text(size=16)) +
+  theme(plot.title=element_text(hjust = (0.5)))+
+  theme(legend.key.size = unit(2, "mm"))
+guides(fill = guide_legend(ncol = 3))
 ```
 
 # Exercise
