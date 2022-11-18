@@ -145,7 +145,7 @@ dds
 
 ```{r}
 # what does it look like? - e.g. use str(dds)
-
+str(dds)
 
 # how to access counts
 
@@ -160,13 +160,13 @@ dds
 
 
 # does it have any rowRanges()?
-
+rowRanges(dds)
 
 # what are its rownames and colnames?
-
-
+rownames(dds)
+colnames(dds)
 # what attributes does it have?
-
+attributes(dds)
 
 ```
 
@@ -175,7 +175,8 @@ dds
 ```{r}
 # practice subsetting dds object
 # select first 3 columns
-
+dds_subset <- dds[, 1:3]
+dds_subset
 
 ```
 
@@ -188,7 +189,7 @@ dds
 
 ```{r}
 # filter out genes that have 0 counts across all samples and save as an object called `dds_filtered`
-
+dds_filtered <- dds[rowSums(counts(dds))>0, ]
 
 # check dims of dds_filtered  
   
@@ -208,7 +209,7 @@ NOTE we only use this tranformed data for QC not for downstream analysis or diff
 
 ```{r}
 #transform data using `rlog()` functions
-rlog_transformed_dds <- 
+rlog_transformed_dds <- rlog(dds_filtered, blind=TRUE)
 
 
 # Notes on `blind` parameter: 
@@ -234,7 +235,7 @@ rlog_transformed_dds <-
 
 ```{r}
 # get vst transformed data using vst() 
-vst_transformed_data <- 
+vst_transformed_data <- vst(dds_filtered, blind=TRUE)
 
 ```
 
@@ -244,10 +245,10 @@ vst_transformed_data <-
 
 ```{r}
 # get correlation matrix of the rlog_transformed counts matrix to get correlations between samples 
-
+cor_matrix <- cor(assay(rlog_transformed_dds), method = c("spearman"))
 
 # use pheatmap to plot the correlation matrix 
-
+pheatmap(cor_matrix)
 ```
 
 # try ploting a heatmap of sample distances 
@@ -290,14 +291,18 @@ What do you notice now about the data and the clustering?
 ```{r, fig.asp=1}
 # plot pca of rlog_transformed_dds using plotPCA()
 
+plotPCA(rlog_transformed_dds_subset, intgroup="cell_type") + theme(aspect.ratio=1)
 
 # what does the intgroup parameter do? have a go at changing it...
 
 
 # how many variable genes is it using for pca? 
+plotPCA(rlog_transformed_dds_subset, intgroup="genotype")
 
+plotPCA(rlog_transformed_dds_subset, intgroup="replicate") + theme(aspect.ratio=1)
 
-# plot the pca for all genes 
+# plot the pca for all genes
+plotPCA(rlog_transformed_dds_subset, intgroup="cell_type", ntop=nrow(rlog_transformed_dds_subset)) + theme(aspect.ratio=1)
 
 ```
 
@@ -320,9 +325,11 @@ What do we need to do to our data???
 ## Update dds_filtered object if needed - call it dds_filtered_updated
 
 ```{r}
-
+dds_filtered <- dds[rowSums(counts(dds))>0, ]
 # do we need to remove/edit samples? 
+dds_filtered_updated <- dds_filtered[,1:6]
 
+design(dds_filtered_updated) <- ~replicate + cell_type
 # do we want to update the design? Is this nessecary in this case?
 # e.g. design(dds) <- ~replicate + condition
 
@@ -337,9 +344,10 @@ What do we need to do to our data???
 
 ```{r}
 # Calculate the size factors for each sample using estimateSizeFactors()
+dds_filtered_updated <- estimateSizeFactors(dds_filtered_updated)
 
 # Access the size factors from the dds_filtered_updated object
-
+sizeFactors(dds_filtered_updated)
 # Do you see any systematic differences in size factors between groups?
 
 ```
@@ -352,19 +360,19 @@ What do we need to do to our data???
 
 ```{r}
 # get counts table normalised using size factors - call it normalized_counts
-
-
+normalized_counts <- counts(dds_filtered_updated, normalized = TRUE)
+normalized_counts
 # check the class of the output
-
+class(normalized_counts)
 ```
 
 # 3. Estimate dispersions for each gene
 
 ```{r}
 # Obtain dispersion estimates for each gene using estimateDispersions() 
-
+dds_filtered_updated <- estimateDispersions(dds_filtered_updated)
 # Plot the per-gene dispersion estimates (DESeq2 has a helper function for this)
-
+plotDispEsts(dds_filtered_updated)
 ```
 
 
@@ -372,7 +380,9 @@ What do we need to do to our data???
 
 ```{r}
 # Tests for significance of coefficients in a negative binomial GLM, using previously calculated size factors and dispersion estimates and WaldTest
-
+library(DESeq2)
+dds_filtered_updated <- nbinomWaldTest(dds_filtered_updated)
+results(dds_filtered_updated)
 ```
 
 
@@ -380,22 +390,43 @@ What do we need to do to our data???
 
 ```{r}
 # generate dds object 
+dds_final <- DESeqDataSetFromMatrix(
+  countData = counts_table,
+  colData = sample_info,
+  design = ~replicate + cell_type,
+  tidy = FALSE,
+  ignoreRank = FALSE
+)
 
+dds
 # filter rows with 0 counts 
+dds_final <- dds_final[rowSums(assays(dds_final)$counts) > 0, ]
+
+dds_final
 
 # remove unwanted samples 
+dds_final <- dds_final[, 1:6]
+
 
 # make DESeqDataSet (dds) object 
+dds_final <- DESeq(dds_final)
+
 
 # run DESeq() 
+dds_final
 
+dim(dds_final)
 ```
 
 # Get the results from your dds object - call it `results_obj`
 
 ```{r}
 # What do the results() and summary() do, what arguments can you specify? 
+results_obj <- results(dds_final, alpha = 0.05)
 
+results_obj
+
+summary(results_obj)
 
 ```
 
@@ -410,15 +441,34 @@ What do we need to do to our data???
  
 ```{r}
 # Plot normalised counts for gene ENSMUSG00000041779
-
+plotCounts(dds_final,
+           gene = "ENSMUSG00000041779", intgroup = "cell_type")
 ```
+
+```{r}
+plotCounts(dds_final,
+           gene = "ENSMUSG00000041779", returnData = T, intgroup = "cell_type")
+```
+
+
 
 # Access the results table for the comparison between CD8 and CD4 T cells . Youu can also try to CD4 vs CD8 (i.e. switch the reference) - you could also try this for replicate 1 vs replicate 3 as a control 
 
 checkout `resultsNames()`  & `results()`
 
 ```{r}
+results_CD8_CD4 <- results(dds_final, contrast = c('cell_type','CD4','CD8'))
 
+results_CD8_CD4
+
+results_CD4_CD8 <- results(dds_final, alpha = 0.05, contrast = c('cell_type','CD4','CD8'))
+
+results_CD4_CD8
+
+summary(results_CD4_CD8)
+summary(results_CD8_CD4)
+
+print(summary(results_CD4_CD8), summary(results_CD8_CD4))
 ```
 
 Table should contain log2 fold changes and p-values for all genes
@@ -426,14 +476,20 @@ Table should contain log2 fold changes and p-values for all genes
 # Plot a histogram of the raw and BH-adjusted p-values using ggplot – do they look as expected? for CD8 vs CD4
 
 ```{r}
+results_obj %>%
+  as.data.frame() %>%
+  ggplot()+
+  geom_histogram(aes(x=pvalue), fill='lightblue') + 
+    geom_histogram(aes(x=padj),fill='lightgreen')
 
+plotMA(results_obj, alpha = 0.05)
 ```
 
 
 # Generate an MA plot of the log2 FC values for all genes using DESeq2 plotMA()
 
 ```{r}
-
+plotMA(results_obj, alpha = 0.05)
 
 ```
 
@@ -441,6 +497,9 @@ Table should contain log2 fold changes and p-values for all genes
 
 ```{r}
 
+shrunkenLFC_dds_results_obj <- lfcShrink(dds_final, coef = "cell_type_CD8_vs_CD4")
+
+shrunkenLFC_dds_results_obj
 # call your results table  called shrunkenLFC_dds_results_obj
 
 ```
@@ -451,8 +510,16 @@ Table should contain log2 fold changes and p-values for all genes
 ```{r}
 
 # convert shrunkenLFC_dds_results_obj to a dataframe and call it shrunkenLFC_dds_results_df
+shrunkenLFC_dds_results_df = data.frame(shrunkenLFC_dds_results_obj)
 
 # Use the org.Mm.eg.db package to get gene symbols for the ensembl gene ids (hint:you did this on bioconductor day) 
+genesymbol <- mapIds(org.Mm.eg.db,
+                     keys = rownames(shrunkenLFC_dds_results_df), column = "SYMBOL",
+                     keytype = "ENSEMBL")
+
+genesymbol
+
+head(shrunkenLFC_dds_results_df)
 
 # How many Ensembl IDs are not assigned an gene symbol and how many gene symbols are duplicated?
 
@@ -463,6 +530,10 @@ keytypes(org.Mm.eg.db)      #to remind us of what keytypes are in this particula
 # use mapIds() to get 1:1 mapping for SYMBOL, ENTREZ and MGI
 
 # add mapId vectors to  shrunkenLFC_dds_results_df
+
+shrunkenLFC_dds_results_df$Gene_symbol <- genesymbol
+
+shrunkenLFC_dds_results_df
 ```
 
 
